@@ -127,7 +127,8 @@ Data
 ----
  * [Freebase data dump](https://developers.google.com/freebase/data); please
    contact [Yang Chen](mailto:yang@cise.ufl.edu) for the clean 388M Freebase facts.
- * Freebase schema
+ * [Freebase schema](data/freebase/freebase-schema.csv)
+ * [YAGO2s clean data](data/yago2s); please visit the [AMIE](https://www.mpi-inf.mpg.de/departments/databases-and-information-systems/research/yago-naga/amie) and [YAGO](http://www.mpi-inf.mpg.de/departments/databases-and-information-systems/research/yago-naga/yago/downloads) websites for original data.
  * [36,625 Freebase first-order rules](http://cise.ufl.edu/~yang/data/Freebase-Rules.zip)
 
 Acknowledgments

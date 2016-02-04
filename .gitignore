@@ -21,5 +21,4 @@ mini-complete-example/sbt/*.jar
 metastore_db/*
 
 # project specific
-data/
 log/
