@@ -16,7 +16,10 @@ License
 This repository is released under the
 [BSD license](http://www.freebsd.org/copyright/freebsd-license.html).
 
-If you use Ontological Pathfinding in your research, please cite our paper:
+If you use Ontological Pathfinding in your research, please cite our paper,
+[Ontological Pathfinding: Mining First-Order Knowledge from Large Knowledge
+Bases](http://www.cise.ufl.edu/~yang/doc/sigmod16.pdf) from [ACM SIGMOD
+2016](http://sigmod2016.org):
 ```
 @inproceedings{chen2016ontological,
   title={Ontological Pathfinding: Mining First-Order Knowledge from Large Knowledge Bases},
