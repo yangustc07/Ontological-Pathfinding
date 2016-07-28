@@ -2,7 +2,7 @@ name := "Ontological-Pathfinding"
 
 version := "1.0"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.10.4"
 
 libraryDependencies ++= Seq(
   ("org.apache.spark" %% "spark-core" % "1.5.1").
@@ -20,6 +20,6 @@ libraryDependencies ++= Seq(
     exclude("org.apache.spark", "spark-unsafe_2.11")
 )
 
-libraryDependencies += "com.github.scopt" %% "scopt" % "3.3.0"
+libraryDependencies += "com.github.scopt" %% "scopt" % "3.5.0"
 
 resolvers += Resolver.sonatypeRepo("public")
