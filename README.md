@@ -33,7 +33,7 @@ Bases](http://www.cise.ufl.edu/~yang/doc/sigmod16.pdf) from [ACM SIGMOD
 Prerequisites
 -------------
 
- * Scala >= 2.11.7
+ * Scala >= 2.10.4
  * sbt >= 0.13.7
  * Spark >= 1.5.1
 
@@ -41,75 +41,43 @@ Quick Start
 -----------
 To build the project, run:
 ```
-$ sbt assembly
+~/op$ sbt assembly
 ```
 
-To mine inference rules (replace the Spark home, data paths, and
-input parameters with your own configuration):
+Extract the dataset:
 ```
-$ YOUR_SPARK_HOME/bin/spark-submit \
---class "Main" \
---master local[64] \
---driver-memory 400G \
---executor-memory 100G \
-target/scala-2.11/Ontological-Pathfinding-assembly-1.0.jar \
-learn --input-facts /path/to/data/facts.csv \
---input-rules /path/to/data/rules.csv \
---output-dir /path/to/output/ \
---rule-type 1 --functional-constraint 100 \
-> /path/to/logs/prune.log
+~/op$ cd data/YAGOData
+~/op/data/YAGOData$ gzip -d YAGOFacts.csv.gz
+~/op/data/YAGOData$ gzip -d YAGOSchema.csv.gz
+~/op/data/YAGOData$ unzip YAGORules.zip
 ```
 
-To infer missing facts:
+Variables to set in `run.sh`:
 ```
-$ YOUR_SPARK_HOME/bin/spark-submit \
---class "Main" \
---master local[64] \
---driver-memory 400G \
---executor-memory 100G \
-target/scala-2.11/Ontological-Pathfinding-assembly-1.0.jar \
-infer --input-facts /path/to/data/facts.csv \
---input-rules /path/to/data/rules.csv \
---output-dir /path/to/output/ \
---rule-type 1 --functional-constraint 100 \
-> /path/to/logs/prune.log
+SPARK_PATH=${HOME}/spark-1.5.1/bin/spark-submit
+JAR_PATH=target/scala-2.10/Ontological-Pathfinding-assembly-1.0.jar
+MAIN_CLASS=Main
+NCORES=64
+DRIVER_MEMORY=400G
+EXECUTOR_MEMORY=100G
 ```
 
-To partition the knowledge base:
+Run the script:
 ```
-$ YOUR_SPARK_HOME/bin/spark-submit \
---class "Main" \
---master local[64] \
---driver-memory 400G \
---executor-memory 100G \
-target/scala-2.11/Ontological-Pathfinding-assembly-1.0.jar \
-partition --input-facts /path/to/data/facts.csv \
---input-rules /path/to/data/rules.csv \
---output-dir /path/to/output/ \
---max-facts 20000000 --max-rules 1000 \
+~/op$ ./run.sh
+00:19:16 [INFO] Mapping facts file "data/YAGOData/YAGOFacts.csv" to integer representation.
+00:20:33 [INFO] Mapping rules file "data/YAGOData/YAGORules.csv-1" to integer representation.
+00:20:33 [INFO] Partitioning KB "data/YAGOData/YAGOFacts.csv" and "data/YAGOData/YAGORules.csv-1" into subsets with max facts = 2000000 and max rules = 1000.
+00:20:50 [INFO] Mining rules from "data/YAGOData/YAGOFacts.csv" and "data/YAGOData/YAGORules.csv-1."
+00:20:50 [INFO] Mining partition 1/1.
+00:21:10 [INFO] Writing output rules to "output-rules/1."
+...
+00:42:14 [INFO] Success.
 ```
 
-The partitioning algorithm outputs the parts in `/path/to/output/part-i`. Thus,
-it is helpful to use the following script to run the mining or inference
-algorithm over all partitions:
+View the result:
 ```
-#!/bin/bash
-
-NUM_PARTS=$(ls -l /path/to/partition-output | grep 'part-' | wc -l)
-for i in $(seq 0 $((NUM_PARTS-1))); do
-  YOUR_SPARK_HOME/bin/spark-submit \
-  --class "Main" \
-  --master local[64] \
-  --driver-memory 400G \
-  --executor-memory 100G \
-  target/scala-2.11/Ontological-Pathfinding-assembly-1.0.jar \
-  learn --input-facts /path/to/partition-output/part-$i/facts.csv/'*' \
-  --input-rules /path/to/partition-output/part-$i/rules.csv \
-  --output-dir /path/to/mining-output/part-$i \
-  --rule-type 1 --functional-constraint 100 \
-  >>${LOG_DIR}/op.log
-done
-
+~/op$ less output-rules/[1-6]/rules
 ```
 
 Supported Rule Types
