@@ -65,14 +65,18 @@ EXECUTOR_MEMORY=100G
 Run the script:
 ```
 ~/op$ ./run.sh
-00:19:16 [INFO] Mapping facts file "data/YAGOData/YAGOFacts.csv" to integer representation.
-00:20:33 [INFO] Mapping rules file "data/YAGOData/YAGORules.csv-1" to integer representation.
-00:20:33 [INFO] Partitioning KB "data/YAGOData/YAGOFacts.csv" and "data/YAGOData/YAGORules.csv-1" into subsets with max facts = 2000000 and max rules = 1000.
-00:20:50 [INFO] Mining rules from "data/YAGOData/YAGOFacts.csv" and "data/YAGOData/YAGORules.csv-1."
-00:20:50 [INFO] Mining partition 1/1.
-00:21:10 [INFO] Writing output rules to "output-rules/1."
+16:55:33 [INFO] Ontological Pathfinding
+16:55:33 [INFO] 1. Rule mining.
+16:55:33 [INFO] 2. Knowledge expansion.
+Choice: [1/2/q]1
+16:55:34 [INFO] Mapping facts file "data/YAGOData/YAGOFacts.csv" to integer representation.
+16:56:47 [INFO] Mapping rules file "data/YAGOData/YAGORules.csv-1" to integer representation.
+16:56:47 [INFO] Partitioning KB "data/YAGOData/YAGOFacts.csv" and "data/YAGOData/YAGORules.csv-1" into subsets with max facts = 2000000 and max rules = 1000.
+16:57:02 [INFO] Mining rules from "data/YAGOData/YAGOFacts.csv" and "data/YAGOData/YAGORules.csv-1."
+16:57:02 [INFO] Mining partition 1/1.
+16:57:21 [INFO] Writing output rules to "output-rules/1."
 ...
-00:42:14 [INFO] Success.
+17:17:34 [INFO] Rule mining finishes.
 ```
 
 View the result:

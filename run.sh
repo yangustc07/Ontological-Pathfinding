@@ -12,8 +12,8 @@
 # op/data/YAGOData/YAGOSchema.csv
 # op/run.sh
 #
-# The output rules will be stored in the directory specified by
-# ${OUTPUT_RULES}/k, where k is the rule type. 
+# The output rules and facts will be stored in the directories specified by
+# ${OUTPUT_RULES}/k and ${OUTPUT_FACTS}/k where k is the rule type.
 #
 # Please run the script at the project root directory ("op" in the example
 # above):
@@ -30,15 +30,20 @@ INPUT_FACTS=data/YAGOData/YAGOFacts.csv
 INPUT_RULES_PREFIX=data/YAGOData/YAGORules.csv
 INPUT_SCHEMA=data/YAGOData/YAGOSchema.csv
 
-# Total number of rule types to mine.
+# Total number of rule types.
 INPUT_RULES_TYPES=6
 
-# Output directory.
+# Output directories.
 OUTPUT_RULES=output-rules
+OUTPUT_FACTS=output-facts
 
-# Algorithm parameters.
+# Partitioning algorithm parameters.
 MAX_FACTS=2000000
 MAX_RULES=1000
+
+# Rule threshold for inference.
+MIN_SUPPORT=2
+MIN_CONFIDENCE=0.6
 
 # Needs to translate strings to integers? For the first run, set them to
 # 'true.' It will generate a set of '.map' files. With previous '.map' files,
@@ -55,11 +60,31 @@ DRIVER_MEMORY=400G
 EXECUTOR_MEMORY=100G
 
 # Intermediate results.
-PARTITION_OUTPUT=partition-output
+MINING_PARTITION_OUTPUT=mining-partition-output
 MINING_OUTPUT=mining-output
+INFERENCE_PARTITION_OUTPUT=inference-partition-output
+INFERENCE_OUTPUT=inference-output
 
 function run() {
-  validate_input
+  print_info "Ontological Pathfinding"
+  print_info "1. Rule mining."
+  print_info "2. Knowledge expansion."
+  read -p "Choice: [1/2/q]" -n 1 -r
+  if [[ $REPLY =~ ^[1]$ ]]; then
+    echo  # Prints newline
+    run_mine
+  elif [[ $REPLY =~ ^[2]$ ]]; then
+    echo
+    run_infer
+  else
+    echo
+    exit 0
+  fi
+}
+
+# Runs rule mining algorithm.
+function run_mine() {
+  validate_mining_input
 
   # Maps string representation to integers.
   if [ "${MAP_PREDICATES}" = true ]; then
@@ -85,22 +110,24 @@ function run() {
     print_info "${message}"
     run_partitioning "${INPUT_FACTS}.map" \
                      "${INPUT_RULES_PREFIX}-${rule_type}.map" \
-                     "${PARTITION_OUTPUT}/${rule_type}" \
+                     "${MINING_PARTITION_OUTPUT}/${rule_type}" \
                      "${MAX_FACTS}" "${MAX_RULES}"
 
     # Runs mining algorithm for each partition.
     message="Mining rules from \"${INPUT_FACTS}\" and "
     message+="\"${INPUT_RULES_PREFIX}-${rule_type}.\""
     print_info "${message}"
-    num_parts=$(ls -l ${PARTITION_OUTPUT}/${rule_type} | grep 'part-' | wc -l)
+    num_parts=$(ls -l ${MINING_PARTITION_OUTPUT}/${rule_type} | \
+      grep 'part-' | wc -l)
     for i in $(seq 0 $((num_parts-1))); do
       print_info "Mining partition $((i+1))/${num_parts}."
-      run_mining "${PARTITION_OUTPUT}/${rule_type}/part-$i/facts.csv/"'*' \
-                 "${PARTITION_OUTPUT}/${rule_type}/part-$i/rules.csv" \
-                 "${rule_type}" 100 \
-                 "${MINING_OUTPUT}/${rule_type}/part-$i" \
-                 "${MINING_OUTPUT}/${rule_type}/part-$i/rules" \
-                 "${MINING_OUTPUT}/${rule_type}/part-$i/prune"
+      run_mining \
+        "${MINING_PARTITION_OUTPUT}/${rule_type}/part-$i/facts.csv/"'*' \
+        "${MINING_PARTITION_OUTPUT}/${rule_type}/part-$i/rules.csv" \
+        "${rule_type}" 100 \
+        "${MINING_OUTPUT}/${rule_type}/part-$i" \
+        "${MINING_OUTPUT}/${rule_type}/part-$i/rules" \
+        "${MINING_OUTPUT}/${rule_type}/part-$i/prune"
     done
     cat "${MINING_OUTPUT}/${rule_type}"/part-*/rules | sort -k1,1 \
         > "${MINING_OUTPUT}/${rule_type}/rules"
@@ -115,13 +142,65 @@ function run() {
                    "${OUTPUT_RULES}/${rule_type}/rules" \
                    "${OUTPUT_RULES}/${rule_type}/prune"
   done
-  print_info "Success."
+  print_info "Rule mining finishes."
 }
+
+# Run the inference algorithm.
+function run_infer() {
+  validate_inference_input
+  for rule_type in $(seq 1 ${INPUT_RULES_TYPES}); do
+    # Prepare rules for inference according to "MIN_SUPPORT" and
+    # "MIN_CONFIDENCE."
+    awk '{if ($2>='"${MIN_SUPPORT}"' && $3>='"${MIN_CONFIDENCE}"') print $1}' \
+        "${MINING_OUTPUT}/${rule_type}/rules" > \
+        "${MINING_OUTPUT}/${rule_type}/rules.infer"
+    join "${INPUT_RULES_PREFIX}-${rule_type}.map" \
+         "${MINING_OUTPUT}/${rule_type}/rules.infer" > \
+         "${INPUT_RULES_PREFIX}-${rule_type}.infer"
+
+    # Partitions the input KB.
+    message="Partitioning KB \"${INPUT_FACTS}\" and "
+    message+="\"${INPUT_RULES_PREFIX}-${rule_type}\" into subsets with "
+    message+="max facts = ${MAX_FACTS} and max rules = ${MAX_RULES}."
+    print_info "${message}"
+    run_partitioning "${INPUT_FACTS}.map" \
+                     "${INPUT_RULES_PREFIX}-${rule_type}.infer" \
+                     "${INFERENCE_PARTITION_OUTPUT}/${rule_type}" \
+                     "${MAX_FACTS}" "${MAX_RULES}"
+
+    # Runs mining algorithm for each partition.
+    message="Inferring facts from \"${INPUT_FACTS}\" and "
+    message+="\"${INPUT_RULES_PREFIX}-${rule_type}.\""
+    print_info "${message}"
+    num_parts=$(ls -l ${INFERENCE_PARTITION_OUTPUT}/${rule_type} \
+              | grep 'part-' | wc -l)
+    for i in $(seq 0 $((num_parts-1))); do
+      print_info "Inferring from partition $((i+1))/${num_parts}."
+      run_inference \
+        "${INFERENCE_PARTITION_OUTPUT}/${rule_type}/part-$i/facts.csv/"'*' \
+        "${INFERENCE_PARTITION_OUTPUT}/${rule_type}/part-$i/rules.csv" \
+        "${rule_type}" \
+        "${INFERENCE_OUTPUT}/${rule_type}/part-$i"
+      done
+    cat "${INFERENCE_OUTPUT}/${rule_type}"/part-*/part-* | sort -t':' -k2,2 \
+        > "${INFERENCE_OUTPUT}/${rule_type}/facts"
+
+    # Format facts for output.
+    print_info "Writing inferred facts to \"${OUTPUT_FACTS}/${rule_type}.\""
+    reformat_facts "${INFERENCE_OUTPUT}/${rule_type}/facts" \
+                   "${OUTPUT_RULES}/${rule_type}/rules" \
+                   "${OUTPUT_FACTS}/${rule_type}/facts" \
+                   "$(dirname "${INPUT_FACTS}")/predicates.map" \
+                   "$(dirname "${INPUT_FACTS}")/entities.map"
+  done
+  print_info "Inference finishes."
+}
+
 
 ###############################################################################
 # Validates input files.
 ###############################################################################
-function validate_input() {
+function validate_mining_input() {
   if [ ! -e "${INPUT_FACTS}" ]; then
     print_error_exit "Invalid input facts file \"${INPUT_FACTS}\"."
   fi
@@ -148,12 +227,12 @@ function validate_input() {
     fi
   fi
 
-  if [ -e "${PARTITION_OUTPUT}" ]; then
-    print_info "Partitioning directory ${PARTITION_OUTPUT} exists."
-    read -p "Clear ${PARTITION_OUTPUT}? [y/n]" -n 1 -r
+  if [ -e "${MINING_PARTITION_OUTPUT}" ]; then
+    print_info "Partitioning directory ${MINING_PARTITION_OUTPUT} exists."
+    read -p "Clear ${MINING_PARTITION_OUTPUT}? [y/n]" -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-      rm -rf ${PARTITION_OUTPUT}
+      rm -rf ${MINING_PARTITION_OUTPUT}
     else
       print_error_exit "Exit."
     fi
@@ -165,6 +244,56 @@ function validate_input() {
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
       rm -rf ${MINING_OUTPUT}
+    else
+      print_error_exit "Exit."
+    fi
+  fi
+}
+
+function validate_inference_input() {
+  if [ ! -e "${INPUT_FACTS}" ]; then
+    print_error_exit "Invalid input facts file \"${INPUT_FACTS}\"."
+  fi
+
+  for rule_type in $(seq 1 ${INPUT_RULES_TYPES}); do
+    if [ ! -e "${MINING_OUTPUT}/${rule_type}/rules" ]; then
+      message="Invalid input rules file ${MINING_OUTPUT}/${rule_type}/rules."
+      print_error_exit "${message}"
+    fi
+    if [ ! -e "${OUTPUT_RULES}/${rule_type}/rules" ]; then
+      message="Invalid input rules file ${OUTPUT_RULES}/${rule_type}/rules."
+      print_error_exit "${message}"
+    fi
+  done
+
+  if [ -e "${OUTPUT_FACTS}" ]; then
+    print_info "Output directory ${OUTPUT_FACTS} exists."
+    read -p "Clear ${OUTPUT_FACTS}? [y/n]" -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      rm -rf ${OUTPUT_FACTS}/*
+    else
+      print_error_exit "Exit."
+    fi
+  fi
+
+  if [ -e "${INFERENCE_PARTITION_OUTPUT}" ]; then
+    print_info "Partitioning directory ${INFERENCE_PARTITION_OUTPUT} exists."
+    read -p "Clear ${INFERENCE_PARTITION_OUTPUT}? [y/n]" -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      rm -rf ${INFERENCE_PARTITION_OUTPUT}
+    else
+      print_error_exit "Exit."
+    fi
+  fi
+
+  if [ -e "${INFERENCE_OUTPUT}" ]; then
+    print_info "Inference directory ${INFERENCE_OUTPUT} exists."
+    read -p "Clear ${INFERENCE_OUTPUT}? [y/n]" -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      rm -rf ${INFERENCE_OUTPUT}
     else
       print_error_exit "Exit."
     fi
@@ -337,6 +466,35 @@ function run_mining() {
 }
 
 ###############################################################################
+# Applies rules for knowledge expansion.
+# Arguments:
+#   $1: Input facts in integer representation.
+#   $2: Input rules in integer representation.
+#   $3: Input rules type (1-8).
+#   $4: Output directory.
+# Returns:
+#   Output facts stored in directory specified by $4.
+###############################################################################
+function run_inference() {
+  input_facts=$1
+  input_rules=$2
+  input_rules_type=$3
+  output_path=$4
+
+  ${SPARK_PATH} \
+    --class ${MAIN_CLASS} \
+    --master local[${NCORES}] \
+    --driver-memory ${DRIVER_MEMORY} \
+    --executor-memory ${EXECUTOR_MEMORY} \
+    ${JAR_PATH} infer \
+    --input-facts "${input_facts}" \
+    --input-rules "${input_rules}" \
+    --output-dir "${output_path}" \
+    --rule-type "${input_rules_type}" --functional-constraint 100 \
+    2>spark.log
+}
+
+###############################################################################
 # Format rules for output.
 # Arguments:
 #   $1: Initial rules in integer representation.
@@ -380,6 +538,42 @@ function reformat_rules() {
 }
 
 ###############################################################################
+# Format facts for output.
+# Arguments:
+#   $1: Inferred facts.
+#   $2: Result rules in string representation with support and confidence
+#       scores.
+#   $3: Output facts.
+#   $4: Map of predicates to integers, default to predicates.map.
+#   $5: Map of entities to integers, default to entities.map.
+# Returns:
+#   Inferred facts stored in files specified by $3, with lineage, support, and
+#   confidence scores.
+###############################################################################
+function reformat_facts() {
+  input_facts=$1
+  input_rules=$2
+  output_facts=$3
+  predicates_map=$4
+  entities_map=$5
+
+  input_dir=$(dirname "${input_facts}")
+  output_dir=$(dirname "${output_facts}")
+  mkdir -p "${output_dir}"
+
+  # Map rule columns:
+  awk -F'[ :]' 'FNR==NR{a[$2]=$1;next}{print a[$1],$2,$3,$4}' \
+    "${predicates_map}" "${input_facts}" > "${input_dir}/facts.map"
+  if [ "${MAP_ENTITIES}" = true ]; then
+    awk -F'[ :]' 'FNR==NR{a[$2]=$1;next}{print $1,a[$2],a[$3],$4}' \
+      ${entities_map} "${input_dir}/facts.map" > "${input_dir}/facts.map.tmp"
+    mv "${input_dir}/facts.map.tmp" "${input_dir}/facts.map"
+  fi
+  join --check-order "${input_dir}/facts.map" "${input_rules}" -1 4 -2 1 | \
+    cut -d' ' -f2- > "${output_facts}"
+}
+
+###############################################################################
 # Maps rule type to length.
 # Arguments:
 #   $1: Rule type.
@@ -399,5 +593,4 @@ function rule_type_to_length() {
   echo "${rule_type_length_array[$((input_rule_type-1))]}"
 }
 
-# Run Ontological Pathfinding algorithm.
 run
