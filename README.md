@@ -18,7 +18,7 @@ This repository is released under the
 
 If you use Ontological Pathfinding in your research, please cite our paper,
 [Ontological Pathfinding: Mining First-Order Knowledge from Large Knowledge
-Bases](http://www.cise.ufl.edu/~yang/doc/sigmod16.pdf) from [ACM SIGMOD
+Bases](http://www.cise.ufl.edu/~yang/doc/sigmod16/paper.pdf) from [ACM SIGMOD
 2016](http://sigmod2016.org):
 ```
 @inproceedings{chen2016ontological,
@@ -96,15 +96,15 @@ To use one of the following rule types, specify it as the `--rule-type` argument
  6. p(x, y) <- q(x, z), r(y, z)
  7. p(x, y) <- q1(x, z1), q2(z2, z3), q3(z3, y)
  8. p(x, y) <- q1(x, z1), q2(z2, z3), q3(z3, z4), q4(z4, y)
- 9. p(x, y) <- q1(x, z1), q2(z2, z3), q3(z3, z4), q4(z4, z5), q5(z5, y)
 
 Data
 ----
- * [Freebase data dump](https://developers.google.com/freebase/data); please
-   contact [Yang Chen](mailto:yang@cise.ufl.edu) for the clean 388M Freebase facts.
- * [Freebase schema](data/freebase/freebase-schema.csv)
- * [YAGO2s clean data](data/yago2s); please visit the [AMIE](https://www.mpi-inf.mpg.de/departments/databases-and-information-systems/research/yago-naga/amie) and [YAGO](http://www.mpi-inf.mpg.de/departments/databases-and-information-systems/research/yago-naga/yago/downloads) websites for original data.
- * [36,625 Freebase first-order rules](http://cise.ufl.edu/~yang/data/Freebase-Rules.zip)
+ * [36,625 Freebase first-order rules](https://docs.google.com/spreadsheets/d/1iyQdTnz5kGHYlyObVAMlZc3I7H5Jkqzuyie4o5wD-Jo/edit?usp=sharing)
+ * [YAOG rules](https://docs.google.com/spreadsheets/d/10VFneJlHLxyR4WgjRO75Z3RstvApaR6fm76e1haSpEc/edit?usp=sharing)
+ * Clean Freebase 388M facts: please contact [Yang Chen](mailto:yang@cise.ufl.edu).
+ * [Clean YAGO2s data](data/YAGOData); You can also find the original [AMIE](https://www.mpi-inf.mpg.de/departments/databases-and-information-systems/research/yago-naga/amie)
+   and [YAGO](http://www.mpi-inf.mpg.de/departments/databases-and-information-systems/research/yago-naga/yago/downloads)
+   data on their websites.
 
 Acknowledgments
 ---------------
