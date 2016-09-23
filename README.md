@@ -100,7 +100,7 @@ To use one of the following rule types, specify it as the `--rule-type` argument
 Data
 ----
  * [36,625 Freebase first-order rules](https://docs.google.com/spreadsheets/d/1iyQdTnz5kGHYlyObVAMlZc3I7H5Jkqzuyie4o5wD-Jo/edit?usp=sharing)
- * [YAOG rules](https://docs.google.com/spreadsheets/d/10VFneJlHLxyR4WgjRO75Z3RstvApaR6fm76e1haSpEc/edit?usp=sharing)
+ * [YAGO rules](https://docs.google.com/spreadsheets/d/10VFneJlHLxyR4WgjRO75Z3RstvApaR6fm76e1haSpEc/edit?usp=sharing)
  * Clean Freebase 388M facts: please contact [Yang Chen](mailto:yang@cise.ufl.edu).
  * [Clean YAGO2s data](data/YAGOData); You can also find the original [AMIE](https://www.mpi-inf.mpg.de/departments/databases-and-information-systems/research/yago-naga/amie)
    and [YAGO](http://www.mpi-inf.mpg.de/departments/databases-and-information-systems/research/yago-naga/yago/downloads)
