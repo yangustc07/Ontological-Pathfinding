@@ -33,9 +33,10 @@ Bases](http://www.cise.ufl.edu/~yang/doc/sigmod16/paper.pdf) from [ACM SIGMOD
 Prerequisites
 -------------
 
- * Scala >= 2.10.4
+ * Scala 2.10.4
  * sbt >= 0.13.7
  * Spark >= 1.5.1
+ * PostgreSQL >= 9.2.3
 
 Quick Start
 -----------
@@ -52,6 +53,18 @@ Extract the dataset:
 ~/op/data/YAGOData$ unzip YAGORules.zip
 ```
 
+We use PostgreSQL to construct candidate rules. To correctly set up the
+database, you need a user, e.g., "op":
+
+```
+$ createuser -s -P op
+```
+
+and a database, e.g., "op":
+```
+$ createdb op
+```
+
 Variables to set in `run.sh`:
 ```
 SPARK_PATH=${HOME}/spark-1.5.1/bin/spark-submit
@@ -60,6 +73,11 @@ MAIN_CLASS=Main
 NCORES=64
 DRIVER_MEMORY=400G
 EXECUTOR_MEMORY=100G
+
+POSTGRESQL_BIN=  # default to /usr/local/pgsql/bin
+POSTGRESQL_HOST=localhost
+POSTGRESQL_USER=op
+POSTGRESQL_DB=op
 ```
 
 Run the script:
@@ -79,7 +97,15 @@ Choice: [1/2/q]1
 17:17:34 [INFO] Rule mining finishes.
 ```
 
-View the result:
+If a KB schema schema is not provided, OP will try to generate a "universal
+schema"
+```
+predicate_i universal universal
+```
+
+for every predicate.
+
+Finally, view the result:
 ```
 ~/op$ less output-rules/[1-6]/rules
 ```

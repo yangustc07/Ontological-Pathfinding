@@ -59,6 +59,12 @@ NCORES=64
 DRIVER_MEMORY=400G
 EXECUTOR_MEMORY=100G
 
+# For candidate rule construction only.
+POSTGRESQL_BIN=  # default to /usr/local/pgsql/bin
+POSTGRESQL_HOST=localhost
+POSTGRESQL_USER=op
+POSTGRESQL_DB=op
+
 # Intermediate results.
 MINING_PARTITION_OUTPUT=mining-partition-output
 MINING_OUTPUT=mining-output
@@ -196,23 +202,49 @@ function run_infer() {
   print_info "Inference finishes."
 }
 
+###############################################################################
+# Validates input programs.
+###############################################################################
+function validate_spark() {
+  if [ ! -e "${SPARK_PATH}" ]; then
+    print_error_exit "Invalid Spark binary \"${SPARK_PATH}.\""
+  fi
+
+  if [ ! -e "${JAR_PATH}" ]; then
+    message="Invalid jar \"${JAR_PATH}.\"\n"
+    message+="Please make sure you have run \"sbt assembly.\""
+    print_error_exit "${message}"
+  fi
+}
 
 ###############################################################################
 # Validates input files.
 ###############################################################################
 function validate_mining_input() {
+  validate_spark
   if [ ! -e "${INPUT_FACTS}" ]; then
-    print_error_exit "Invalid input facts file \"${INPUT_FACTS}\"."
+    print_error_exit "Invalid input facts file \"${INPUT_FACTS}.\""
   fi
 
   if [ ! -e "${INPUT_SCHEMA}" ]; then
-    print_error_exit "Invalid input schema file \"${input_schema}\"."
+    read -p "Construct universal schema from ${INPUT_FACTS}? [y/n]" -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      construct_schema
+    else
+      print_error_exit "Invalid input schema file \"${input_schema}.\""
+    fi
   fi
 
   for rule_type in $(seq 1 ${INPUT_RULES_TYPES}); do
     if [ ! -e "${INPUT_RULES_PREFIX}-${rule_type}" ]; then
-      message="Invalid input rules file ${INPUT_RULES_PREFIX}-${rule_type}."
-      print_error_exit "${message}"
+      print_info "Construct candidate rules into \"${INPUT_RULES_PREFIX}-i.\""
+      if [ ! -e "op.sql" ]; then
+        print_error_exit "SQL script \"op.sql\" not found."
+      else
+        construct_candidate_rules
+      fi
+      break
     fi
   done
 
@@ -251,8 +283,9 @@ function validate_mining_input() {
 }
 
 function validate_inference_input() {
+  validate_spark
   if [ ! -e "${INPUT_FACTS}" ]; then
-    print_error_exit "Invalid input facts file \"${INPUT_FACTS}\"."
+    print_error_exit "Invalid input facts file \"${INPUT_FACTS}.\""
   fi
 
   for rule_type in $(seq 1 ${INPUT_RULES_TYPES}); do
@@ -317,6 +350,38 @@ function print_info() {
 function print_error_exit() {
   (>&2 echo -e "$(date +%T) \e[31m[ERROR]\e[0m $1")
   exit 1;
+}
+
+###############################################################################
+# Support for KBs with no schema. Generates a universal schema with
+#   predicate  NoDomain  NoDomain
+# for each predicate.
+###############################################################################
+function construct_schema() {
+  cut -d' ' ${INPUT_FACTS} -f1 | sort -u | sed 's/$/ Universe Universe/g' \
+          > ${INPUT_SCHEMA}
+}
+
+###############################################################################
+# Constructs candidate rules by traversing the schema graph.
+###############################################################################
+function construct_candidate_rules() {
+  sed_schema_path="\\\set schema_file $(pwd)/${INPUT_SCHEMA}"
+  sed_rules_path="\\\set rules_file  $(pwd)/${INPUT_RULES_PREFIX}"
+  sed -i "1d;2s:.*:${sed_schema_path}\n${sed_rules_path}:" op.sql
+
+  echo "Is the following setup correct?"
+  echo "PostgreSQL user: ${POSTGRESQL_USER}"
+  echo "PostgreSQL database: ${POSTGRESQL_DB}"
+  read -p "[y/n]" -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    read -p "PostgreSQL user: " POSTGRESQL_USER
+    read -p "PostgreSQL database: " POSTGRESQL_DB
+  fi
+  ${POSTGRESQL_BIN:+$POSTGRESQL_BIN/}psql -h ${POSTGRESQL_HOST} \
+    -U ${POSTGRESQL_USER} -d ${POSTGRESQL_DB} -f op.sql \
+    || print_error_exit "PostgreSQL failure."
 }
 
 ###############################################################################
@@ -455,7 +520,7 @@ function run_mining() {
     --output-dir "${output_path}" \
     --rule-type "${input_rules_type}" \
     --functional-constraint "${functional_constraint}" \
-    >${prune} 2>spark.log
+    >${prune} 2>>spark.log
 
   ### IMPORTANT ###
   # Remove pruned rules from output.
@@ -491,7 +556,7 @@ function run_inference() {
     --input-rules "${input_rules}" \
     --output-dir "${output_path}" \
     --rule-type "${input_rules_type}" --functional-constraint 100 \
-    2>spark.log
+    2>>spark.log
 }
 
 ###############################################################################
