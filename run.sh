@@ -206,9 +206,8 @@ function run_infer() {
 # Validates input programs.
 ###############################################################################
 function validate_spark() {
-  if [ ! -e "${SPARK_PATH}" ]; then
+  command -v "${SPARK_PATH}" >/dev/null 2>&1 || \
     print_error_exit "Invalid Spark binary \"${SPARK_PATH}.\""
-  fi
 
   if [ ! -e "${JAR_PATH}" ]; then
     message="Invalid jar \"${JAR_PATH}.\"\n"
@@ -379,7 +378,10 @@ function construct_candidate_rules() {
     read -p "PostgreSQL user: " POSTGRESQL_USER
     read -p "PostgreSQL database: " POSTGRESQL_DB
   fi
-  ${POSTGRESQL_BIN:+$POSTGRESQL_BIN/}psql -h ${POSTGRESQL_HOST} \
+  psql_path=${POSTGRESQL_BIN:+$POSTGRESQL_BIN/}psql
+  command -v "${psql_path}" >/dev/null 2>&1 || \
+    print_error_exit "PostgreSQL not installed in \"${psql_path}.\""
+  ${psql_path} -h ${POSTGRESQL_HOST} \
     -U ${POSTGRESQL_USER} -d ${POSTGRESQL_DB} -f op.sql \
     || print_error_exit "PostgreSQL failure."
 }
