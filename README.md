@@ -123,6 +123,13 @@ To use one of the following rule types, specify it as the `--rule-type` argument
  7. p(x, y) <- q1(x, z1), q2(z2, z3), q3(z3, y)
  8. p(x, y) <- q1(x, z1), q2(z2, z3), q3(z3, z4), q4(z4, y)
 
+To add a new rule type, you need to
+
+ 1. Add the data file to the data directory as defined in run.sh.
+ 2. Implement the rule construction query in op.sql.
+ 3. Implement the rule mining algorithm in src/main/scala/OPLearners.scala.
+ 4. Update INPUT_RULES_TYPES in run.sh.
+
 Data
 ----
  * [36,625 Freebase first-order rules](https://docs.google.com/spreadsheets/d/1iyQdTnz5kGHYlyObVAMlZc3I7H5Jkqzuyie4o5wD-Jo/edit?usp=sharing)
