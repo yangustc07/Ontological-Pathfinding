@@ -1,5 +1,5 @@
-\set schema_file /home/yang/Ontological-Pathfinding/data/YAGOData/YAGOSchema.csv
-\set rules_file  /home/yang/Ontological-Pathfinding/data/YAGOData/YAGORules.csv
+\set schema_file /path/to/Ontological-Pathfinding/data/YAGOData/YAGOSchema.csv
+\set rules_file  /path/to/Ontological-Pathfinding/data/YAGOData/YAGORules.csv
 
 \set rules_file_1 :rules_file '-1'
 \set rules_file_2 :rules_file '-2'
