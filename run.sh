@@ -5,11 +5,12 @@
 # "Ontological-Pathfinding-assembly-1.0.jar" with the main class "Main," and
 # the binary "spark-submit" is available to launch the application.
 # 
-# Input includes facts, schema, and initial rules.
+# Input includes facts, schema, and optional initial rules. If input rules are
+# unspecified, this script will generate them from the schema.
 #
 # op/data/YAGOData/YAGOFacts.csv
-# op/data/YAGOData/YAGORules.csv-[1-6]
 # op/data/YAGOData/YAGOSchema.csv
+# op/data/YAGOData/YAGORules.csv-[1-6] (optional)
 # op/run.sh
 #
 # The output rules and facts will be stored in the directories specified by
