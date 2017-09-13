@@ -80,6 +80,9 @@ POSTGRESQL_USER=op
 POSTGRESQL_DB=op
 ```
 
+`run.sh` also specifies the input and output file paths. The input rules are
+optional; `run.sh` will generate them if they are unspecified.
+
 Run the script:
 ```
 ~/op$ ./run.sh
